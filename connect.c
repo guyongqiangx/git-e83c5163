@@ -1240,6 +1240,7 @@ struct child_process *git_connect(int fd[2], const char *url,
 	} else if (protocol == PROTO_GIT) {
 		conn = git_connect_git(fd, hostandport, path, prog,
 				       &version_advert, flags);
+		conn->trace2_child_class = "transport/git";
 	} else {
 		struct strbuf cmd = STRBUF_INIT;
 		const char *const *var;
@@ -1282,10 +1283,12 @@ struct child_process *git_connect(int fd[2], const char *url,
 				strbuf_release(&cmd);
 				return NULL;
 			}
+			conn->trace2_child_class = "transport/ssh";
 			fill_ssh_args(conn, ssh_host, port, &version_advert,
 				      flags);
 		} else {
 			transport_check_allowed("file");
+			conn->trace2_child_class = "transport/file";
 			argv_array_pushf(&conn->env_array,
 					 GIT_PROTOCOL_ENVIRONMENT "=%s",
 					 version_advert.buf);

@@ -1592,7 +1592,7 @@ int finalize_object_file(const char *tmpfile, const char *filename)
 	unlink_or_warn(tmpfile);
 	if (ret) {
 		if (ret != EEXIST) {
-			return error_errno(_("unable to write sha1 filename %s"), filename);
+			return error_errno(_("unable to write file %s"), filename);
 		}
 		/* FIXME!!! Collision check here ? */
 	}
@@ -1623,9 +1623,9 @@ int hash_object_file(const void *buf, unsigned long len, const char *type,
 static void close_loose_object(int fd)
 {
 	if (fsync_object_files)
-		fsync_or_die(fd, "sha1 file");
+		fsync_or_die(fd, "loose object file");
 	if (close(fd) != 0)
-		die_errno(_("error when closing sha1 file"));
+		die_errno(_("error when closing loose object file"));
 }
 
 /* Size of directory component, including the ending '/' */
@@ -1716,7 +1716,7 @@ static int write_loose_object(const struct object_id *oid, char *hdr,
 		ret = git_deflate(&stream, Z_FINISH);
 		the_hash_algo->update_fn(&c, in0, stream.next_in - in0);
 		if (write_buffer(fd, compressed, stream.next_out - compressed) < 0)
-			die(_("unable to write sha1 file"));
+			die(_("unable to write loose object file"));
 		stream.next_out = compressed;
 		stream.avail_out = sizeof(compressed);
 	} while (ret == Z_OK);
@@ -1815,7 +1815,7 @@ int force_object_loose(const struct object_id *oid, time_t mtime)
 		return 0;
 	buf = read_object(the_repository, oid, &type, &len);
 	if (!buf)
-		return error(_("cannot read sha1_file for %s"), oid_to_hex(oid));
+		return error(_("cannot read object for %s"), oid_to_hex(oid));
 	hdrlen = xsnprintf(hdr, sizeof(hdr), "%s %"PRIuMAX , type_name(type), (uintmax_t)len) + 1;
 	ret = write_loose_object(oid, hdr, hdrlen, buf, len, mtime);
 	free(buf);
@@ -1823,27 +1823,19 @@ int force_object_loose(const struct object_id *oid, time_t mtime)
 	return ret;
 }
 
-int repo_has_sha1_file_with_flags(struct repository *r,
-				  const unsigned char *sha1, int flags)
+int repo_has_object_file_with_flags(struct repository *r,
+				    const struct object_id *oid, int flags)
 {
-	struct object_id oid;
 	if (!startup_info->have_repository)
 		return 0;
-	hashcpy(oid.hash, sha1);
-	return oid_object_info_extended(r, &oid, NULL,
+	return oid_object_info_extended(r, oid, NULL,
 					flags | OBJECT_INFO_SKIP_CACHED) >= 0;
 }
 
 int repo_has_object_file(struct repository *r,
 			 const struct object_id *oid)
 {
-	return repo_has_sha1_file(r, oid->hash);
-}
-
-int repo_has_object_file_with_flags(struct repository *r,
-				    const struct object_id *oid, int flags)
-{
-	return repo_has_sha1_file_with_flags(r, oid->hash, flags);
+	return repo_has_object_file_with_flags(r, oid, 0);
 }
 
 static void check_tree(const void *buf, size_t size)
@@ -2304,7 +2296,7 @@ static int check_stream_oid(git_zstream *stream,
 
 	the_hash_algo->final_fn(real_oid.hash, &c);
 	if (!oideq(expected_oid, &real_oid)) {
-		error(_("sha1 mismatch for %s (expected %s)"), path,
+		error(_("hash mismatch for %s (expected %s)"), path,
 		      oid_to_hex(expected_oid));
 		return -1;
 	}
@@ -2356,7 +2348,7 @@ int read_loose_object(const char *path,
 		}
 		if (check_object_signature(expected_oid, *contents,
 					 *size, type_name(*type))) {
-			error(_("sha1 mismatch for %s (expected %s)"), path,
+			error(_("hash mismatch for %s (expected %s)"), path,
 			      oid_to_hex(expected_oid));
 			free(*contents);
 			goto out;

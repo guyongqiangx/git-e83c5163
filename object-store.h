@@ -208,19 +208,6 @@ int read_loose_object(const char *path,
 		      unsigned long *size,
 		      void **contents);
 
-/*
- * Convenience for sha1_object_info_extended() with a NULL struct
- * object_info. OBJECT_INFO_SKIP_CACHED is automatically set; pass
- * nonzero flags to also set other flags.
- */
-int repo_has_sha1_file_with_flags(struct repository *r,
-				  const unsigned char *sha1, int flags);
-static inline int repo_has_sha1_file(struct repository *r,
-				     const unsigned char *sha1)
-{
-	return repo_has_sha1_file_with_flags(r, sha1, 0);
-}
-
 #ifndef NO_THE_REPOSITORY_COMPATIBILITY_MACROS
 #define has_sha1_file_with_flags(sha1, flags) repo_has_sha1_file_with_flags(the_repository, sha1, flags)
 #define has_sha1_file(sha1) repo_has_sha1_file(the_repository, sha1)

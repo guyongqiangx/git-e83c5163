@@ -12,6 +12,7 @@
 
 #include <openssl/sha.h>
 #include <zlib.h>
+#include <string.h> /* memcmp,memmove,memset,memcpy,strlen */
 
 /*
  * Basic data structures for the directory cache

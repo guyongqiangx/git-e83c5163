@@ -10,6 +10,9 @@ void usage(const char *err)
 	exit(1);
 }
 
+/*
+ * 将字符c[0-9a-fA-F]转换成对应的16进制数值
+ */
 static unsigned hexval(char c)
 {
 	if (c >= '0' && c <= '9')
@@ -21,6 +24,10 @@ static unsigned hexval(char c)
 	return ~0;
 }
 
+/*
+ * 将16进制字符串转换成相应的16进制数据
+ * [hex]"91450428" --> [sha1]0x91,0x45,0x04,0x28
+ */
 int get_sha1_hex(char *hex, unsigned char *sha1)
 {
 	int i;
@@ -34,6 +41,10 @@ int get_sha1_hex(char *hex, unsigned char *sha1)
 	return 0;
 }
 
+/*
+ * 将16进制数据转换成相应的16进制字符串
+ * [sha1]0x91,0x45,0x04,0x28 --> "91450428"
+ */
 char * sha1_to_hex(unsigned char *sha1)
 {
 	static char buffer[50];
@@ -54,12 +65,23 @@ char * sha1_to_hex(unsigned char *sha1)
  * careful about using it. Do a "strdup()" if you need to save the
  * filename.
  */
+/*
+ * 返回 sha1 值对应的文件名
+ *   如: 914504285ab1fc2a7fca88dbf15f2b48a20b502d
+ * 返回: ".dircache/objects/91/4504285ab1fc2a7fca88dbf15f2b48a20b502d"
+ */
 char *sha1_file_name(unsigned char *sha1)
 {
 	int i;
 	static char *name, *base;
 
 	if (!base) {
+		/*
+		 * char *sha1_file_directory = getenv("SHA1_FILE_DIRECTORY") ? : ".dircache/objects";
+		 * base = ".dircache/objects/__/________...________"
+		 *                           |
+		 *                           name
+		 */
 		char *sha1_file_directory = getenv(DB_ENVIRONMENT) ? : DEFAULT_DB_ENVIRONMENT;
 		int len = strlen(sha1_file_directory);
 		base = malloc(len + 60);
@@ -72,13 +94,16 @@ char *sha1_file_name(unsigned char *sha1)
 	for (i = 0; i < 20; i++) {
 		static char hex[] = "0123456789abcdef";
 		unsigned int val = sha1[i];
-		char *pos = name + i*2 + (i > 0);
+		char *pos = name + i*2 + (i > 0); /* (i>0)用于调整文件名中的'/'字符带来的偏差 */
 		*pos++ = hex[val >> 4];
 		*pos = hex[val & 0xf];
 	}
 	return base;
 }
 
+/*
+ * 返回 sha1 值对应的文件内容(解压缩后返回)
+ */
 void * read_sha1_file(unsigned char *sha1, char *type, unsigned long *size)
 {
 	z_stream stream;
@@ -86,17 +111,21 @@ void * read_sha1_file(unsigned char *sha1, char *type, unsigned long *size)
 	struct stat st;
 	int i, fd, ret, bytes;
 	void *map, *buf;
+	/* 将 sha1 值转换成文件名 */
 	char *filename = sha1_file_name(sha1);
 
+	/* 打开文件 */
 	fd = open(filename, O_RDONLY);
 	if (fd < 0) {
 		perror(filename);
 		return NULL;
 	}
+	/* 获取文件大小 */
 	if (fstat(fd, &st) < 0) {
 		close(fd);
 		return NULL;
 	}
+	/* 将文件映射到内存，方便访问 */
 	map = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
 	close(fd);
 	if (-1 == (int)(long)map)
@@ -111,6 +140,7 @@ void * read_sha1_file(unsigned char *sha1, char *type, unsigned long *size)
 
 	inflateInit(&stream);
 	ret = inflate(&stream, 0);
+	/* 解析 buffer 中的数据到 type 和 size 中 */
 	if (sscanf(buffer, "%10s %lu", type, size) != 2)
 		return NULL;
 	bytes = strlen(buffer) + 1;
@@ -130,6 +160,12 @@ void * read_sha1_file(unsigned char *sha1, char *type, unsigned long *size)
 	return buf;
 }
 
+/*
+ * 将 buf 数据写入到文件中
+ * 1. 压缩 buf 数据;
+ * 2. 计算压缩数据的 sha1 值;
+ * 3. 将压缩后数据写入 sha1 值对应的文件中;
+ */
 int write_sha1_file(char *buf, unsigned len)
 {
 	int size;
@@ -138,6 +174,7 @@ int write_sha1_file(char *buf, unsigned len)
 	unsigned char sha1[20];
 	SHA_CTX c;
 
+	/* 压缩传入的 buf 数据 */
 	/* Set it up */
 	memset(&stream, 0, sizeof(stream));
 	deflateInit(&stream, Z_BEST_COMPRESSION);
@@ -154,22 +191,29 @@ int write_sha1_file(char *buf, unsigned len)
 	deflateEnd(&stream);
 	size = stream.total_out;
 
+	/* 计算压缩后数据的SHA1哈希值 */
 	/* Sha1.. */
 	SHA1_Init(&c);
 	SHA1_Update(&c, compressed, size);
 	SHA1_Final(sha1, &c);
 
+	/* 将压缩后的数据写入到 sha1 值对应的文件中 */
 	if (write_sha1_buffer(sha1, compressed, size) < 0)
 		return -1;
 	printf("%s\n", sha1_to_hex(sha1));
 	return 0;
 }
 
+/*
+ * 将 buf 中的数据写入到 sha1 值对应的文件中
+ */
 int write_sha1_buffer(unsigned char *sha1, void *buf, unsigned int size)
 {
+	/* 将 sha1 值转换成文件名 filename */
 	char *filename = sha1_file_name(sha1);
 	int i, fd;
 
+	/* 打开文件, 写入 buf 中的数据 */
 	fd = open(filename, O_WRONLY | O_CREAT | O_EXCL, 0666);
 	if (fd < 0)
 		return (errno == EEXIST) ? 0 : -1;
@@ -184,6 +228,11 @@ static int error(const char * string)
 	return -1;
 }
 
+/*
+ * 校验 hdr 部分的 sha1 数据是否正确
+ * 1. 计算 hdr 数据的哈希值
+ * 2. 同 hdr 的 sha1 成员值比较
+ */
 static int verify_hdr(struct cache_header *hdr, unsigned long size)
 {
 	SHA_CTX c;
@@ -194,7 +243,9 @@ static int verify_hdr(struct cache_header *hdr, unsigned long size)
 	if (hdr->version != 1)
 		return error("bad version");
 	SHA1_Init(&c);
+	/* 计算 hdr 部分除 sha1 外的哈希值 */
 	SHA1_Update(&c, hdr, offsetof(struct cache_header, sha1));
+	/* 累积 hdr 以后到数据结束的哈希值, 中间跳过 hdr 的 sha1 部分 */
 	SHA1_Update(&c, hdr+1, size - sizeof(*hdr));
 	SHA1_Final(sha1, &c);
 	if (memcmp(sha1, hdr->sha1, 20))
@@ -219,10 +270,12 @@ int read_cache(void)
 		sha1_file_directory = DEFAULT_DB_ENVIRONMENT;
 	if (access(sha1_file_directory, X_OK) < 0)
 		return error("no access to SHA1 file directory");
+	/* 打开文件 ".dircache/index" */
 	fd = open(".dircache/index", O_RDONLY);
 	if (fd < 0)
 		return (errno == ENOENT) ? 0 : error("open failed");
 
+	/* 映射文件到内存 */
 	map = (void *)-1;
 	if (!fstat(fd, &st)) {
 		map = NULL;
@@ -235,10 +288,12 @@ int read_cache(void)
 	if (-1 == (int)(long)map)
 		return error("mmap failed");
 
+	/* 检查映射数据的 hdr */
 	hdr = map;
 	if (verify_hdr(hdr, size) < 0)
 		goto unmap;
 
+	/* 计算 hdr 中的条目数 */
 	active_nr = hdr->entries;
 	active_alloc = alloc_nr(active_nr);
 	active_cache = calloc(active_alloc, sizeof(struct cache_entry *));

@@ -300,7 +300,9 @@ out:
 	unlink(".dircache/index.lock");
 }
 
-/*
+/* #
+ * # update-cache 使用示例
+ * #
  * git-e83c5163$ ./update-cache Makefile
  * git-e83c5163$ tree .dircache/ -a
  * .dircache/
@@ -325,4 +327,32 @@ out:
  * 00000060: 6b 65 66 69 6c 65 00 00                          kefile..
  * git-e83c5163$ sha1sum .dircache/objects/b0/4fb99b9a176ff05e03d5e6e739f0a82b83c56c
  * b04fb99b9a176ff05e03d5e6e739f0a82b83c56c  .dircache/objects/b0/4fb99b9a176ff05e03d5e6e739f0a82b83c56c
+ * git-e83c5163$ ./update-cache README
+ * git-e83c5163$ tree .dircache/ -a
+ * .dircache/
+ * ├── index
+ * └── objects
+ *     ├── 00
+ *     ...
+ *     ├── 66
+ *     │   └── 5025b11ce8fb16fadb7daebf77cb54a2ae39a1
+ *     ...
+ *     ├── b0
+ *     │   └── 4fb99b9a176ff05e03d5e6e739f0a82b83c56c
+ *     ...
+ *     └── ff
+ *
+ * 257 directories, 3 files
+ * git-e83c5163$ xxd -g 1 .dircache/index
+ * 00000000: 43 52 49 44 01 00 00 00 02 00 00 00 4f 1d b5 af  CRID........O...
+ * 00000010: 48 e0 35 5d 65 c2 23 f2 0d 02 2d 4c 83 6b 1d 16  H.5]e.#...-L.k..
+ * 00000020: 10 7b ed 60 b6 28 26 27 10 7b ed 60 b6 28 26 27  .{.`.(&'.{.`.(&'
+ * 00000030: 03 fc 00 00 86 83 e8 03 a4 81 00 00 8b 63 00 00  .............c..
+ * 00000040: 14 00 00 00 ca 03 00 00 b0 4f b9 9b 9a 17 6f f0  .........O....o.
+ * 00000050: 5e 03 d5 e6 e7 39 f0 a8 2b 83 c5 6c 08 00 4d 61  ^....9..+..l..Ma
+ * 00000060: 6b 65 66 69 6c 65 00 00 31 79 ed 60 0e eb ae 26  kefile..1y.`...&
+ * 00000070: 31 79 ed 60 0e eb ae 26 03 fc 00 00 87 83 e8 03  1y.`...&........
+ * 00000080: a4 81 00 00 8b 63 00 00 14 00 00 00 c8 20 00 00  .....c....... ..
+ * 00000090: 66 50 25 b1 1c e8 fb 16 fa db 7d ae bf 77 cb 54  fP%.......}..w.T
+ * 000000a0: a2 ae 39 a1 06 00 52 45 41 44 4d 45 00 00 00 00  ..9...README....
  */

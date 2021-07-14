@@ -13,6 +13,7 @@ int main(int argc, char **argv)
 	if (argc != 2 || get_sha1_hex(argv[1], sha1))
 		usage("cat-file: cat-file <sha1>");
 	/* 获取 sha1 值对应的文件内容(解压缩后返回) */
+	/* NOTE!!! 这里的 buf 是在 read_sha1_file 内部 malloc 的, 使用后没有释放会造成内存泄露 */
 	buf = read_sha1_file(sha1, type, &size);
 	if (!buf)
 		exit(1);

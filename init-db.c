@@ -88,3 +88,21 @@ int main(int argc, char **argv)
 	}
 	return 0;
 }
+
+/* #
+ * # init-db 使用示例
+ * #
+ * git-e83c5163$ ./init-db
+ * defaulting to private storage area
+ * git-e83c5163$ tree .dircache
+ * .dircache
+ * └── objects
+ *     ├── 00
+ *     ├── 01
+ *     ...
+ *     └── ff
+ *
+ * 257 directories, 0 files
+ * git-e83c5163$ ./init-db
+ * unable to create .dircache: File exists
+ */

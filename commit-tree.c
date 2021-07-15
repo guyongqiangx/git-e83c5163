@@ -210,10 +210,10 @@ int main(int argc, char **argv)
 	while (fgets(comment, sizeof(comment), stdin) != NULL)
 		add_buffer(&buffer, &size, "%s", comment);
 
-	/* 将 "commit " 和附加数据长度写入到 buffer 中, 返回 "commit " 开始的位置和后面附加数据的长度 size */
+	/* 将 "commit " 和附加数据长度写入到 buffer 中, 从 "commit " 开始到结束实际上是一个 commit 对象 */
 	finish_buffer("commit ", &buffer, &size);
 
-	/* 将 buffer 数据写入到文件中 */
+	/* 将 commit 对象数据写入到文件中 */
 	write_sha1_file(buffer, size);
 	return 0;
 }
@@ -222,4 +222,50 @@ int main(int argc, char **argv)
  * # commit-tree 使用示例
  * #
  *
+ * # 1. 在 write-tree 示例中写入过一个 tree 对象(包含 Makefile 和 README)
+ * git-e83c5163$ ./write-tree
+ * cb8b8e042b2abdf1070f9f60d83f3fb9cbe204ce
+ * git-e83c5163$ tree .dircache -a
+ * .dircache
+ * ├── index
+ * └── objects
+ *     ├── 00
+ *     ...
+ *     ├── 66
+ *     │   └── 5025b11ce8fb16fadb7daebf77cb54a2ae39a1
+ *     ...
+ *     ├── b0
+ *     │   └── 4fb99b9a176ff05e03d5e6e739f0a82b83c56c
+ *     ...
+ *     ├── cb
+ *     │   └── 8b8e042b2abdf1070f9f60d83f3fb9cbe204ce
+ *     ...
+ *     └── ff
+ *
+ * # 2. 使用 commit-tree 提交写入的对象
+ * git-e83c5163$ echo "First Commit!" | ./commit-tree cb8b8e042b2abdf1070f9f60d83f3fb9cbe204ce
+ * Committing initial tree cb8b8e042b2abdf1070f9f60d83f3fb9cbe204ce
+ * 3824d701efdf721efebf5ef04d44817469d7cef4
+ *
+ * # 3. 使用 cat-file 解析 commit-tree 写入的对象到临时文件中
+ * git-e83c5163$ ./cat-file 3824d701efdf721efebf5ef04d44817469d7cef4
+ * temp_git_file_QQADM5: commit
+ *
+ * # 4. 显示 commit-tree 对象的内容
+ * git-e83c5163$ xxd -g 1 temp_git_file_QQADM5
+ * 00000000: 74 72 65 65 20 63 62 38 62 38 65 30 34 32 62 32  tree cb8b8e042b2
+ * 00000010: 61 62 64 66 31 30 37 30 66 39 66 36 30 64 38 33  abdf1070f9f60d83
+ * 00000020: 66 33 66 62 39 63 62 65 32 30 34 63 65 0a 61 75  f3fb9cbe204ce.au
+ * 00000030: 74 68 6f 72 20 52 6f 63 6b 79 20 47 75 2c 52 6f  thor Rocky Gu,Ro
+ * 00000040: 63 6b 79 20 47 75 2c 75 2c 30 30 39 33 35 37 33  cky Gu,u,0093573
+ * 00000050: 39 20 3c 72 67 39 33 35 37 33 39 40 73 74 62 73  9 <rg935739@stbs
+ * 00000060: 7a 78 2d 62 6c 64 2d 35 3e 20 54 68 75 20 4a 75  zx-bld-5> Thu Ju
+ * 00000070: 6c 20 31 35 20 31 34 3a 33 33 3a 30 37 20 32 30  l 15 14:33:07 20
+ * 00000080: 32 31 0a 63 6f 6d 6d 69 74 74 65 72 20 52 6f 63  21.committer Roc
+ * 00000090: 6b 79 20 47 75 2c 52 6f 63 6b 79 20 47 75 2c 75  ky Gu,Rocky Gu,u
+ * 000000a0: 2c 30 30 39 33 35 37 33 39 20 3c 72 67 39 33 35  ,00935739 <rg935
+ * 000000b0: 37 33 39 40 73 74 62 73 7a 78 2d 62 6c 64 2d 35  739@stbszx-bld-5
+ * 000000c0: 3e 20 54 68 75 20 4a 75 6c 20 31 35 20 31 34 3a  > Thu Jul 15 14:
+ * 000000d0: 33 33 3a 30 37 20 32 30 32 31 0a 0a 46 69 72 73  33:07 2021..Firs
+ * 000000e0: 74 20 43 6f 6d 6d 69 74 21 0a                    t Commit!.
  */

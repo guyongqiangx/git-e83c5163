@@ -268,4 +268,12 @@ int main(int argc, char **argv)
  * 000000c0: 3e 20 54 68 75 20 4a 75 6c 20 31 35 20 31 34 3a  > Thu Jul 15 14:
  * 000000d0: 33 33 3a 30 37 20 32 30 32 31 0a 0a 46 69 72 73  33:07 2021..Firs
  * 000000e0: 74 20 43 6f 6d 6d 69 74 21 0a                    t Commit!.
+ *
+ * # 5. 直接显示 commit-tree 对象的内容 (和我们用 'git log commit_id' 看到的一样)
+ * $ cat temp_git_file_QQADM5
+ * tree cb8b8e042b2abdf1070f9f60d83f3fb9cbe204ce
+ * author Rocky Gu,Rocky Gu,u,00935739 <rg935739@stbszx-bld-5> Thu Jul 15 14:33:07 2021
+ * committer Rocky Gu,Rocky Gu,u,00935739 <rg935739@stbszx-bld-5> Thu Jul 15 14:33:07 2021
+ *
+ * First Commit!
  */

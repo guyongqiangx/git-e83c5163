@@ -303,7 +303,11 @@ out:
 /* #
  * # update-cache 使用示例
  * #
+ *
+ * # 1. 使用 update-cache 将 Makefile 添加到暂存区
  * git-e83c5163$ ./update-cache Makefile
+ *
+ * # 2. 查看新增的 object 数据 (第一次添加文件, 原来的内容为空)
  * git-e83c5163$ tree .dircache/ -a
  * .dircache/
  * ├── index
@@ -317,6 +321,8 @@ out:
  *     └── ff
  *
  * 257 directories, 2 files
+ *
+ * # 3. 查看索引文件的内容 (Makefile 文件信息已经添加到该文件)
  * git-e83c5163$ xxd -g 1 .dircache/index
  * 00000000: 43 52 49 44 01 00 00 00 01 00 00 00 1c ee 04 41  CRID...........A
  * 00000010: 4a 8b 00 b2 05 55 e7 6b 2c f6 d6 40 2f c4 2d 21  J....U.k,..@/.-!
@@ -325,9 +331,15 @@ out:
  * 00000040: 14 00 00 00 ca 03 00 00 b0 4f b9 9b 9a 17 6f f0  .........O....o.
  * 00000050: 5e 03 d5 e6 e7 39 f0 a8 2b 83 c5 6c 08 00 4d 61  ^....9..+..l..Ma
  * 00000060: 6b 65 66 69 6c 65 00 00                          kefile..
+ *
+ * # 4. 文件存储的数据时以其 sha1 值命名, 这里使用 sha1sum 工具验证下
  * git-e83c5163$ sha1sum .dircache/objects/b0/4fb99b9a176ff05e03d5e6e739f0a82b83c56c
  * b04fb99b9a176ff05e03d5e6e739f0a82b83c56c  .dircache/objects/b0/4fb99b9a176ff05e03d5e6e739f0a82b83c56c
+ *
+ * # 5. 使用 update-cache 再新增一个文件
  * git-e83c5163$ ./update-cache README
+ *
+ * # 6. 查看新增的 object 数据 (第二次添加文件, 原来已经有一个文件)
  * git-e83c5163$ tree .dircache/ -a
  * .dircache/
  * ├── index
@@ -343,6 +355,8 @@ out:
  *     └── ff
  *
  * 257 directories, 3 files
+ *
+ * # 7. 查看索引文件内容 (在 Makefile 文件后增加了 README 文件的信息)
  * git-e83c5163$ xxd -g 1 .dircache/index
  * 00000000: 43 52 49 44 01 00 00 00 02 00 00 00 4f 1d b5 af  CRID........O...
  * 00000010: 48 e0 35 5d 65 c2 23 f2 0d 02 2d 4c 83 6b 1d 16  H.5]e.#...-L.k..

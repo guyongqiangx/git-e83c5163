@@ -25,7 +25,7 @@ static unsigned hexval(char c)
 }
 
 /*
- * 将16进制字符串转换成相应的16进制数据
+ * 将 sha1 字符串转换成相应的 sha1 值
  * [hex]"91450428" --> [sha1]0x91,0x45,0x04,0x28
  */
 int get_sha1_hex(char *hex, unsigned char *sha1)
@@ -42,7 +42,7 @@ int get_sha1_hex(char *hex, unsigned char *sha1)
 }
 
 /*
- * 将16进制数据转换成相应的16进制字符串
+ * 将 sha1 值转换成相应的 sha1 字符串
  * [sha1]0x91,0x45,0x04,0x28 --> "91450428"
  */
 char * sha1_to_hex(unsigned char *sha1)
@@ -253,6 +253,7 @@ static int verify_hdr(struct cache_header *hdr, unsigned long size)
 	return 0;
 }
 
+/* 读取索引文件".dircache/index", 建立缓存, 返回条目数 */
 int read_cache(void)
 {
 	int fd, i;

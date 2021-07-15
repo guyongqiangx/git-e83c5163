@@ -30,10 +30,19 @@ int main(int argc, char **argv)
 /* #
  * # cat-file 使用示例
  * #
+ *
+ * # 0. 命令格式
+ * # $ cat-file <sha1>
+ *
+ * # 1. 查看已有的 sha1 文件对象
  * git-e83c5163$ ls .dircache/objects/b0/
  * 4fb99b9a176ff05e03d5e6e739f0a82b83c56c
+ *
+ * # 2. 使用 cat-file 操作提取 sha1 文件对象 (找到 sha1 文件对象, 提取内容并解压缩到临时文件中)
  * git-e83c5163$ ./cat-file b04fb99b9a176ff05e03d5e6e739f0a82b83c56c
  * temp_git_file_Xq29L3: blob
+ *
+ * # 3. 查看 cat-file 生成的临时文件的内容
  * git-e83c5163$ head -5 temp_git_file_Xq29L3
  * CFLAGS=-g
  * CC= *

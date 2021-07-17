@@ -1,7 +1,10 @@
 #include "cache.h"
 
 /*
- * 1. 创建目录".dircache/objects/{00,01,02,...,fd,fe,ff}"
+ * 命令: "init-db"
+ * 示例: $ ./init-db
+ *
+ * 创建目录".dircache/objects/{00,01,02,...,fd,fe,ff}"
  * $ tree .dircache
  * .dircache
  * └── objects

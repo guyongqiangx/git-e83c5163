@@ -257,6 +257,9 @@ inside:
 }
 
 /*
+ * "update-cache <file>"
+ * 示例: $ ./update-cache Makefile
+ *
  * 添加新文件到暂存区(cache)中, 现在叫 staging
  * 1. 文件内容写入到 blob 数据中
  * 2. 文件信息添加到 ".dircache/index" 中

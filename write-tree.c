@@ -34,6 +34,10 @@ static int prepend_integer(char *buffer, unsigned val, int i)
 
 #define ORIG_OFFSET (40)	/* Enough space to add the header of "tree <size>\0" */
 
+/*
+ * 命令: "write-tree"
+ * 示例: $ ./write-tree
+ */
 int main(int argc, char **argv)
 {
 	unsigned long size, offset, val;
@@ -86,6 +90,8 @@ int main(int argc, char **argv)
  * #
  *
  * # 1. 查看 .dircache/objects 下的对象 (有两个对象, 分别对应 Makefile 和 README 数据)
+ * git-e83c5163$ ./update-cache Makefile
+ * git-e83c5163$ ./update-cache README
  * git-e83c5163$ tree .dircache/ -a
  * .dircache/
  * ├── index
@@ -116,8 +122,8 @@ int main(int argc, char **argv)
  * 00000090: 66 50 25 b1 1c e8 fb 16 fa db 7d ae bf 77 cb 54  fP%.......}..w.T
  * 000000a0: a2 ae 39 a1 06 00 52 45 41 44 4d 45 00 00 00 00  ..9...README....
  *
- * # 3. 将 .dircache/index 缓存的内容打包成 tree 对象写入, 生成 tree 数据
- * git-e83c5163$ ./write-tree 
+ * # 3. 将 .dircache/index 暂存区内容打包成 tree 对象写入, 生成 tree 数据
+ * git-e83c5163$ ./write-tree
  * cb8b8e042b2abdf1070f9f60d83f3fb9cbe204ce
  *
  * # 4. 再查看 .dircache/objects 下的对象, 新增了一个刚写入的数据

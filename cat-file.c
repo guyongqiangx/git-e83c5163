@@ -1,5 +1,9 @@
 #include "cache.h"
 
+/*
+ * 命令: "cat-file <sha1>"
+ * 示例: $ ./cat-file b04fb99b9a176ff05e03d5e6e739f0a82b83c56c
+ */
 int main(int argc, char **argv)
 {
 	unsigned char sha1[20];
@@ -34,7 +38,8 @@ int main(int argc, char **argv)
  * # 0. 命令格式
  * # $ cat-file <sha1>
  *
- * # 1. 查看已有的 sha1 文件对象
+ * # 1. 添加文件, 并查看已有的 sha1 文件对象
+ * git-e83c5163$ ./update-cache Makefile
  * git-e83c5163$ ls .dircache/objects/b0/
  * 4fb99b9a176ff05e03d5e6e739f0a82b83c56c
  *

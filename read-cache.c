@@ -1,7 +1,16 @@
 #include "cache.h"
 
+/*
+ * read-cache.c 定义了各组件共用的函数
+ */
+
 const char *sha1_file_directory = NULL;
+/* 内存中的 cache entry 缓存数组指针 */
 struct cache_entry **active_cache = NULL;
+/*
+ *    active_nr: 为暂存区文件 ".dircache/index" 包含的实际 cache entry 数目
+ * active_alloc: 为内存中可存放的 cache entry 数目(前面 cative_nr 部分已使用)
+ */
 unsigned int active_nr = 0, active_alloc = 0;
 
 void usage(const char *err)
@@ -32,6 +41,7 @@ int get_sha1_hex(char *hex, unsigned char *sha1)
 {
 	int i;
 	for (i = 0; i < 20; i++) {
+		/* 将相邻的两个 char 转换成一个 byte */
 		unsigned int val = (hexval(hex[0]) << 4) | hexval(hex[1]);
 		if (val & ~0xff)
 			return -1;
@@ -67,14 +77,15 @@ char * sha1_to_hex(unsigned char *sha1)
  */
 /*
  * 返回 sha1 值对应的文件名
- *   如: 914504285ab1fc2a7fca88dbf15f2b48a20b502d
- * 返回: ".dircache/objects/91/4504285ab1fc2a7fca88dbf15f2b48a20b502d"
+ * 如16进制数据: 914504285ab1fc2a7fca88dbf15f2b48a20b502d
+ *   返回字符串: ".dircache/objects/91/4504285ab1fc2a7fca88dbf15f2b48a20b502d"
  */
 char *sha1_file_name(unsigned char *sha1)
 {
 	int i;
 	static char *name, *base;
 
+	/* base 为 static 指针, 第一次分配并设置为 ".dircache/objects/__/________...________" 模式, 下次直接使用 */
 	if (!base) {
 		/*
 		 * char *sha1_file_directory = getenv("SHA1_FILE_DIRECTORY") ? : ".dircache/objects";
@@ -132,6 +143,7 @@ void * read_sha1_file(unsigned char *sha1, char *type, unsigned long *size)
 		return NULL;
 
 	/* Get the data stream */
+	/* 初始化 zlib stream 结构体 */
 	memset(&stream, 0, sizeof(stream));
 	stream.next_in = map;
 	stream.avail_in = st.st_size;
@@ -140,22 +152,31 @@ void * read_sha1_file(unsigned char *sha1, char *type, unsigned long *size)
 
 	inflateInit(&stream);
 	ret = inflate(&stream, 0);
-	/* 解析 buffer 中的数据到 type 和 size 中 */
+	/*
+	 * 解压数据后, 解析提取头部数据到 type (blob/tree/commit) 和 size 中
+	 * 原始数据的头部格式为: <ascii tag without space> + <space> + <ascii decimal size> + <byte\0> + <binary object data>
+	 *                即: <type>                    + ' '     + <size>               + '\0'     + <binary data>
+	 */
 	if (sscanf(buffer, "%10s %lu", type, size) != 2)
 		return NULL;
 	bytes = strlen(buffer) + 1;
+	/* 根据解析得到的 size (最终数据大小), 分配对应大小的 buf */
 	buf = malloc(*size);
 	if (!buf)
 		return NULL;
 
+	/* 复制第一次解压缩后, 头部后面的二进制数据到缓冲区 buf */
 	memcpy(buf, buffer + bytes, stream.total_out - bytes);
+	/* 设置 bytes 为已经解压缩得到的数据长度值 */
 	bytes = stream.total_out - bytes;
 	if (bytes < *size && ret == Z_OK) {
 		stream.next_out = buf + bytes;
 		stream.avail_out = *size - bytes;
+		/* 解压剩余数据 */
 		while (inflate(&stream, Z_FINISH) == Z_OK)
 			/* nothing */;
 	}
+	/* 解压结束 */
 	inflateEnd(&stream);
 	return buf;
 }
@@ -178,20 +199,24 @@ int write_sha1_file(char *buf, unsigned len)
 	/* Set it up */
 	memset(&stream, 0, sizeof(stream));
 	deflateInit(&stream, Z_BEST_COMPRESSION);
+	/* 根据初始化的算法和数据长度 len, 计算压缩后数据的上限, 实际得到的压缩数据不会超出这个上限 */
 	size = deflateBound(&stream, len);
 	compressed = malloc(size);
 
 	/* Compress it */
+	/* 设置 zlib stream 的输入输出输出数据指针 */
 	stream.next_in = buf;
 	stream.avail_in = len;
 	stream.next_out = compressed;
 	stream.avail_out = size;
+	/* 压缩数据 */
 	while (deflate(&stream, Z_FINISH) == Z_OK)
 		/* nothing */;
 	deflateEnd(&stream);
+	/* 获取最终压缩后数据的大小 */
 	size = stream.total_out;
 
-	/* 计算压缩后数据的SHA1哈希值 */
+	/* 计算压缩后数据的 sha1 值 */
 	/* Sha1.. */
 	SHA1_Init(&c);
 	SHA1_Update(&c, compressed, size);
@@ -229,25 +254,27 @@ static int error(const char * string)
 }
 
 /*
- * 校验 hdr 部分的 sha1 数据是否正确
- * 1. 计算 hdr 数据的哈希值
- * 2. 同 hdr 的 sha1 成员值比较
+ * 检查暂存区文件(".dircache/index")的 header 数据
+ * 1. 检查 header 部分的 signature 和 version
+ * 2. 检查 header 部分存储的 sha1 值
  */
 static int verify_hdr(struct cache_header *hdr, unsigned long size)
 {
 	SHA_CTX c;
 	unsigned char sha1[20];
 
+	/* 检查 signature 和 version */
 	if (hdr->signature != CACHE_SIGNATURE)
 		return error("bad signature");
 	if (hdr->version != 1)
 		return error("bad version");
 	SHA1_Init(&c);
-	/* 计算 hdr 部分除 sha1 外的哈希值 */
+	/* 计算 header 部分哈希值 (不包含 sha1 成员本身) */
 	SHA1_Update(&c, hdr, offsetof(struct cache_header, sha1));
-	/* 累积 hdr 以后到数据结束的哈希值, 中间跳过 hdr 的 sha1 部分 */
+	/* 计算 header 后面数据的哈希值 (所有的 cache entry) */
 	SHA1_Update(&c, hdr+1, size - sizeof(*hdr));
 	SHA1_Final(sha1, &c);
+	/* 将最终得到的 sha1 值同 hdr 存储的 sha1 值比较 */
 	if (memcmp(sha1, hdr->sha1, 20))
 		return error("bad header sha1");
 	return 0;
@@ -269,6 +296,7 @@ int read_cache(void)
 	sha1_file_directory = getenv(DB_ENVIRONMENT);
 	if (!sha1_file_directory)
 		sha1_file_directory = DEFAULT_DB_ENVIRONMENT;
+	/* 检查 ".dircache" 是否具有可执行权限, 为什么是可执行权限? */
 	if (access(sha1_file_directory, X_OK) < 0)
 		return error("no access to SHA1 file directory");
 	/* 打开文件 ".dircache/index" */
@@ -289,17 +317,21 @@ int read_cache(void)
 	if (-1 == (int)(long)map)
 		return error("mmap failed");
 
-	/* 检查映射数据的 hdr */
+	/* 检查映射数据的 header */
 	hdr = map;
 	if (verify_hdr(hdr, size) < 0)
 		goto unmap;
 
-	/* 计算 hdr 中的条目数 */
+	/* 根据 header 中已有的条目数 */
 	active_nr = hdr->entries;
+	/* 新的总条目数为已有数据的 3/2 倍 */
 	active_alloc = alloc_nr(active_nr);
+	/* 根据新的条目数分配内存 */
 	active_cache = calloc(active_alloc, sizeof(struct cache_entry *));
 
+	/* offset 为暂存区文件内 cache entry 开始的位置 */
 	offset = sizeof(*hdr);
+	/* 逐个复制暂存区文件的 cache entry 到 active_cache[] 中 */
 	for (i = 0; i < hdr->entries; i++) {
 		struct cache_entry *ce = map + offset;
 		offset = offset + ce_size(ce);

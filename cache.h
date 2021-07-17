@@ -67,9 +67,15 @@ struct cache_entry {
 	unsigned char name[0];
 };
 
+/* 用于存储版本库目录路径, 默认为 ".dircache/objects", 实际没有使用, 每次都重新设置 */
 const char *sha1_file_directory;
-struct cache_entry **active_cache;
-unsigned int active_nr, active_alloc;
+/* 内存中的 cache entry 缓存数组指针 */
+struct cache_entry **active_cache = NULL;
+/*
+ *    active_nr: 为暂存区文件 ".dircache/index" 包含的实际 cache entry 数目
+ * active_alloc: 为内存中可存放的 cache entry 数目(前面 cative_nr 部分已使用)
+ */
+unsigned int active_nr = 0, active_alloc = 0;
 
 /*
  * 版本库目录的环境变量和默认名称, 当前git版本库目录已经改为".git/objects"了

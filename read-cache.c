@@ -4,6 +4,7 @@
  * read-cache.c 定义了各组件共用的函数
  */
 
+/* 用于存储版本库目录路径, 默认为 ".dircache/objects", 实际没有使用, 每次都重新设置 */
 const char *sha1_file_directory = NULL;
 /* 内存中的 cache entry 缓存数组指针 */
 struct cache_entry **active_cache = NULL;

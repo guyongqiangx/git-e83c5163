@@ -127,6 +127,11 @@ static void remove_special(char *p)
  */
 #define MAXPARENT (16)
 
+/*
+ * "commit-tree <sha1> [-p <sha1>]* < changelog"
+ * 第一次提交: $ echo "First Commit!" | ./commit-tree cb8b8e042b2abdf1070f9f60d83f3fb9cbe204ce
+ *   后续提交: $ echo "Second Commit!" | ./commit-tree 0cecb5da03708fd258e4d6b2019a78578e1c9152 -p 3824d701efdf721efebf5ef04d44817469d7cef4
+ */
 int main(int argc, char **argv)
 {
 	int i, len;
@@ -222,7 +227,9 @@ int main(int argc, char **argv)
  * # commit-tree 使用示例
  * #
  *
- * # 1. 在 write-tree 示例中写入过一个 tree 对象(包含 Makefile 和 README)
+ * # 1. 在暂存区添加文件后写入一个 tree 对象(包含 Makefile 和 README, 以及一个 tree 对象)
+ * git-e83c5163$ ./update-cache Makefile
+ * git-e83c5163$ ./update-cache README
  * git-e83c5163$ ./write-tree
  * cb8b8e042b2abdf1070f9f60d83f3fb9cbe204ce
  * git-e83c5163$ tree .dircache -a
@@ -270,10 +277,29 @@ int main(int argc, char **argv)
  * 000000e0: 74 20 43 6f 6d 6d 69 74 21 0a                    t Commit!.
  *
  * # 5. 直接显示 commit-tree 对象的内容 (和我们用 'git log commit_id' 看到的一样)
- * $ cat temp_git_file_QQADM5
+ * git-e83c5163$ cat temp_git_file_QQADM5
  * tree cb8b8e042b2abdf1070f9f60d83f3fb9cbe204ce
  * author Rocky Gu,Rocky Gu,u,00935739 <rg935739@stbszx-bld-5> Thu Jul 15 14:33:07 2021
  * committer Rocky Gu,Rocky Gu,u,00935739 <rg935739@stbszx-bld-5> Thu Jul 15 14:33:07 2021
  *
  * First Commit!
+ *
+ * # 6. 编辑 Makefile, 使用 update-cache添加到暂存区, 使用 write-tree 写入 tree 对象
+ * git-e83c5163$ vim Makefile
+ * git-e83c5163$ ./update-cache Makefile
+ * git-e83c5163$ ./write-tree
+ * 0cecb5da03708fd258e4d6b2019a78578e1c9152
+ *
+ * # 7. 使用 commit-tree 执行第二次提交, 并使用 cat-file 检查提交内容
+ * git-e83c5163$ echo "Second Commit!" | ./commit-tree 0cecb5da03708fd258e4d6b2019a78578e1c9152 -p 3824d701efdf721efebf5ef04d44817469d7cef4
+ * 6d55fcb1945d84b22cd06c64bfab804ad4ded798
+ * git-e83c5163$ ./cat-file 6d55fcb1945d84b22cd06c64bfab804ad4ded798
+ * temp_git_file_SU60Jd: commit
+ * git-e83c5163$ cat temp_git_file_SU60Jd
+ * tree 0cecb5da03708fd258e4d6b2019a78578e1c9152
+ * parent 3824d701efdf721efebf5ef04d44817469d7cef4
+ * author guyongqiang,,, <ygu@guyongqiangx> Sat Jul 17 18:18:58 2021
+ * committer guyongqiang,,, <ygu@guyongqiangx> Sat Jul 17 18:18:58 2021
+ *
+ * Second Commit!
  */

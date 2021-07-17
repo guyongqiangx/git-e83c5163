@@ -51,6 +51,10 @@ static void show_differences(struct cache_entry *ce, struct stat *cur,
 	pclose(f);
 }
 
+/*
+ * 命令: "show-diff <file>"
+ * 示例: $ ./show-diff Makefile
+ */
 int main(int argc, char **argv)
 {
 	/* 读取索引文件".dircache/index"到内存, 建立缓存 */
@@ -99,15 +103,9 @@ int main(int argc, char **argv)
  * # show-diff 使用示例
  * #
  *
- * # 1. 检查已经添加到 cache 的文件
- * git-e83c5163$ xxd -g 1 .dircache/index
- * 0000000: 43 52 49 44 01 00 00 00 01 00 00 00 f5 12 43 49  CRID..........CI
- * 0000010: d6 cd d6 2e 1a a0 37 1d 89 e7 00 e9 9a 25 4f e9  ......7......%O.
- * 0000020: 54 f5 ee 60 09 28 8e 14 54 f5 ee 60 09 28 8e 14  T..`.(..T..`.(..
- * 0000030: 11 08 00 00 79 00 dc 00 b4 81 00 00 e8 03 00 00  ....y...........
- * 0000040: e8 03 00 00 ca 03 00 00 b0 4f b9 9b 9a 17 6f f0  .........O....o.
- * 0000050: 5e 03 d5 e6 e7 39 f0 a8 2b 83 c5 6c 08 00 4d 61  ^....9..+..l..Ma
- * 0000060: 6b 65 66 69 6c 65 00 00                          kefile..
+ * # 1. 添加文件 Makefile, 然后修改文件
+ * git-e83c5163$ ./update-cache Makefile
+ * git-e83c5163$ vim Makefile
  *
  * # 2. 使用 show-diff 比较工作区的 Makefile 和暂存区的数据
  * git-e83c5163$ ./show-diff Makefile

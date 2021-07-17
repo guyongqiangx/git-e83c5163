@@ -5,12 +5,15 @@
  */
 static int cache_name_compare(const char *name1, int len1, const char *name2, int len2)
 {
+	/* 获取 name1 和 name2 的最小长度 */
 	int len = len1 < len2 ? len1 : len2;
 	int cmp;
 
+	/* 检查最小长度部分 */
 	cmp = memcmp(name1, name2, len);
 	if (cmp)
 		return cmp;
+	/* 名字前面部分一样, 但长度不同的情况 */
 	if (len1 < len2)
 		return -1;
 	if (len1 > len2)
@@ -18,6 +21,11 @@ static int cache_name_compare(const char *name1, int len1, const char *name2, in
 	return 0;
 }
 
+/*
+ * 根据文件名 name, 使用二分查找其在 cache entry 中的位置
+ * 找到, 返回 -pos
+ * 没有找到, 返回插入位置 pos
+ */
 static int cache_name_pos(const char *name, int namelen)
 {
 	int first, last;
@@ -39,39 +47,59 @@ static int cache_name_pos(const char *name, int namelen)
 	return first;
 }
 
+/*
+ * 使用二分法删除文件在内存 cache entry 中的条目
+ */
 static int remove_file_from_cache(char *path)
 {
+	/* 根据文件名查找 cache entry 中对应条目的位置 */
 	int pos = cache_name_pos(path, strlen(path));
 	if (pos < 0) {
 		pos = -pos-1;
 		active_nr--;
 		if (pos < active_nr)
+			/* 移动后面所有 cache entry 条目的内存 */
+			/* 问题: 每一条 cache_entry 的内容是变长的, 怎么计算总长度? */
 			memmove(active_cache + pos, active_cache + pos + 1, (active_nr - pos - 1) * sizeof(struct cache_entry *));
 	}
 }
 
+/*
+ * 使用二分法往内存的 cache entry 中插入新的数据
+ */
 static int add_cache_entry(struct cache_entry *ce)
 {
 	int pos;
 
+	/* 使用二分法根据文件名查找 cache entry 中对应条目的位置, 找到了则得到其位置的 -pos, 没找到, 则返回插入该条目应该在的位置 pos */
 	pos = cache_name_pos(ce->name, ce->namelen);
 
 	/* existing match? Just replace it */
+	/* 找到条目, 则直接更新该信息, 然后返回 */
 	if (pos < 0) {
 		active_cache[-pos-1] = ce;
 		return 0;
 	}
 
+	/* 没找到的情况, 准备插入新的数据 */
+
 	/* Make sure the array is big enough .. */
+	/* 如果当前已经使用了所有预分配的条目, 则重新分配一个更大的缓存 */
 	if (active_nr == active_alloc) {
 		active_alloc = alloc_nr(active_alloc);
 		active_cache = realloc(active_cache, active_alloc * sizeof(struct cache_entry *));
 	}
 
+	/* 准备插入新的数据 */
+
 	/* Add it in.. */
+	/* 递增当前已经使用的条目数 */
 	active_nr++;
+	/* 移动插入位置后面的内存 */
 	if (active_nr > pos)
 		memmove(active_cache + pos + 1, active_cache + pos, (active_nr - pos - 1) * sizeof(ce));
+
+	/* 在 cache entry 中存入新的数据 */
 	active_cache[pos] = ce;
 	return 0;
 }
@@ -149,7 +177,9 @@ static int add_file_to_cache(char *path)
 	/* 打开 path 指定文件, 用于后续提取文件信息和内容 */
 	fd = open(path, O_RDONLY);
 	if (fd < 0) {
+		/* 如果打开文件失败的原因是找不到文件 */
 		if (errno == ENOENT)
+			/* 在内存的 cache entry 中删除该文件 */
 			return remove_file_from_cache(path);
 		return -1;
 	}
@@ -182,7 +212,7 @@ static int add_file_to_cache(char *path)
 	if (index_fd(path, namelen, ce, fd, &st) < 0)
 		return -1;
 
-	/* 将 cache entry 条目添加到缓存列表中 */
+	/* 将 cache entry 条目添加到内存的缓存列表中 */
 	return add_cache_entry(ce);
 }
 
@@ -268,7 +298,7 @@ int main(int argc, char **argv)
 {
 	int i, newfd, entries;
 
-	/* 读取索引文件".dircache/index"到内存, 建立缓存 */
+	/* 读取索引文件".dircache/index"到内存, 建立缓存, 返回条目数 */
 	entries = read_cache();
 	if (entries < 0) {
 		perror("cache corrupted");
@@ -283,20 +313,20 @@ int main(int argc, char **argv)
 	}
 	for (i = 1 ; i < argc; i++) {
 		char *path = argv[i];
-		/* 检查 path 字符串中是否包含'.'和'\'字符 */
+		/* 检查文件参数 path 字符串中是否包含'.'和'\'字符 */
 		if (!verify_path(path)) {
 			fprintf(stderr, "Ignoring path %s\n", argv[i]);
 			continue;
 		}
 		/*
-		 * 将 path 指定的文件数据写入 blob 中, 文件信息写入到 cache entry 中
+		 * 将 path 指定的文件数据写入 blob 中, 文件信息写入到内存的 cache entry 中
 		 */
 		if (add_file_to_cache(path)) {
 			fprintf(stderr, "Unable to add %s to database\n", path);
 			goto out;
 		}
 	}
-	/* 将更新后的 cache entry 写入到 ".dircache/index.lock" 文件, 并命名回 ".dircache/index" */
+	/* 将内存中更新后的 cache entry 写入到 ".dircache/index.lock" 文件, 并命名回 ".dircache/index" */
 	if (!write_cache(newfd, active_cache, active_nr) && !rename(".dircache/index.lock", ".dircache/index"))
 		return 0;
 out:
